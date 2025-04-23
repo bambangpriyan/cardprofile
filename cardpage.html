@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glassmorphic Card Generator</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" />
+  <style>
+    :root {
+      --glass-bg: rgba(255,255,255,0.15);
+      --glass-border: rgba(255,255,255,0.3);
+      --accent: #fff;
+      --card-width: 340px;
+      --radius: 1rem;
+      --padding: 2rem;
+      --gap: 1rem;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Inter', sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg,#667eea,#764ba2);
+    }
+    .card {
+      width: var(--card-width);
+      background: var(--glass-bg);
+      border:1px solid var(--glass-border);
+      border-radius:var(--radius);
+      padding:var(--padding);
+      backdrop-filter:blur(10px);
+      color:var(--accent);
+      box-shadow:0 8px 32px rgba(0,0,0,0.1);
+      transition:transform .3s, box-shadow .3s;
+      text-align:center;
+      position:relative;
+      background-size:cover;
+      background-position:center;
+    }
+    .card:hover { transform: translateY(-5px) scale(1.02); box-shadow:0 16px 48px rgba(0,0,0,0.2); }
+    .card-form input,
+    .card-form button {
+      width:100%; padding:0.6rem; margin-bottom:var(--gap);
+      border:none; border-radius:0.5rem;
+      background:rgba(255,255,255,0.25);
+      color:#fff; transition:background .3s;
+    }
+    .card-form input:focus { background:rgba(255,255,255,0.4); outline:none; }
+    #photo-preview, #bg-preview {
+      width:100px; height:100px;
+      border-radius:50%; object-fit:cover;
+      margin:0 auto var(--gap);
+      display:none; border:2px solid var(--accent);
+    }
+    .result-container { display:none; flex-direction:column; align-items:center; gap:var(--gap); }
+    #result-photo {
+      width:100px; height:100px;
+      border-radius:50%; object-fit:cover;
+      margin:0 auto var(--gap);
+    }
+    #res-name { font-size:1.4rem; font-weight:600; margin-bottom:0.5rem; }
+    #res-address { font-size:1rem; opacity:0.8; margin-bottom:calc(var(--gap)*1.5); }
+    .info-group { display:flex; flex-direction:column; align-items:center; gap:var(--gap); margin-bottom:var(--gap); }
+    .info-item { display:flex; align-items:center; gap:0.5rem; }
+    .info-item i { font-size:1.1rem; }
+    .result-socials { display:flex; justify-content:center; gap:2rem; margin-bottom:var(--gap); }
+    .social { cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:0.3rem; }
+    .social i { font-size:1.5rem; transition:transform .3s; }
+    .social:hover i { transform:scale(1.2); }
+    .social span { font-size:0.9rem; }
+    #download-btn { position:relative; overflow:hidden; padding:0.6rem 1.2rem;
+      background:rgba(255,255,255,0.6); color:#333; font-weight:600;
+      border:none; border-radius:0.5rem; cursor:pointer;
+      transition:background .3s;
+    }
+    #download-btn:hover { background:rgba(255,255,255,0.8); }
+    #download-btn::before { content:''; position:absolute; top:50%; left:-150%; width:50%; height:200%;
+      background:rgba(255,255,255,0.8);
+      transform:translateY(-50%) skewX(-25deg);
+      transition:transform .5s ease;
+    }
+    #download-btn:hover::before { transform:translateX(300%) translateY(-50%) skewX(-25deg); }
+  </style>
+</head>
+<body>
+  <div class="card card-form">
+    <h2>Enter Your Info</h2>
+    <input type="file" id="photo" accept="image/*">
+    <img id="photo-preview" alt="Profile Preview">
+    <input type="file" id="bgPhoto" accept="image/*">
+    <div style="font-size:0.9rem; color:rgba(255,255,255,0.7); margin-bottom:var(--gap); text-align:center;">Background Image (download only)</div>
+    <img id="bg-preview" alt="Background Preview">
+    <input type="text" id="name" placeholder="Name">
+    <input type="text" id="address" placeholder="Address">
+    <input type="tel" id="phone" placeholder="Phone Number">
+    <input type="email" id="email" placeholder="Email">
+    <input type="text" id="instaUser" placeholder="Instagram Username">
+    <input type="text" id="xUser" placeholder="X Username">
+    <button id="generate">Generate Card</button>
+  </div>
+
+  <div class="result-container" id="result">
+    <div class="card" id="card-to-download">
+      <img id="result-photo" alt="Profile Photo">
+      <div id="res-name"></div>
+      <div id="res-address"></div>
+      <div class="info-group">
+        <div class="info-item"><i class="fas fa-phone"></i><span id="res-phone"></span></div>
+        <div class="info-item"><i class="fas fa-envelope"></i><span id="res-email"></span></div>
+      </div>
+      <div class="result-socials">
+        <div class="social" id="res-insta"><i class="fab fa-instagram"></i><span id="res-insta-text"></span></div>
+        <div class="social" id="res-x"><i class="fab fa-x"></i><span id="res-x-text"></span></div>
+      </div>
+    </div>
+    <button id="download-btn">Download Card</button>
+  </div>
+
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <script>
+    const photoInput = document.getElementById('photo');
+    const preview = document.getElementById('photo-preview');
+    const bgInput = document.getElementById('bgPhoto');
+    const bgPreview = document.getElementById('bg-preview');
+    let bgSrc = '';
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files[0]; if (!file) return;
+      const fr = new FileReader(); fr.onload = () => { preview.src = fr.result; preview.style.display = 'block'; };
+      fr.readAsDataURL(file);
+    });
+    bgInput.addEventListener('change', () => {
+      const file = bgInput.files[0]; if (!file) return;
+      const fr = new FileReader(); fr.onload = () => { bgSrc = fr.result; bgPreview.src = fr.result; bgPreview.style.display = 'block'; };
+      fr.readAsDataURL(file);
+    });
+    document.getElementById('generate').addEventListener('click', () => {
+      // Fill basic info
+      const mapping = { name:'res-name', address:'res-address', phone:'res-phone', email:'res-email' };
+      Object.keys(mapping).forEach(k=>document.getElementById(mapping[k]).textContent = document.getElementById(k).value.trim());
+      if (preview.src) document.getElementById('result-photo').src = preview.src;
+      // Socials
+      const insta = document.getElementById('instaUser').value.trim();
+      const xuser = document.getElementById('xUser').value.trim();
+      [['res-insta',insta,'instagram.com'], ['res-x',xuser,'x.com']].forEach(([id,user,domain]) => {
+        const el = document.getElementById(id);
+        const txt = el.querySelector('span');
+        if (user) { el.style.display='flex'; txt.textContent=user; el.onclick=()=>window.open(`https://${domain}/${user}`,'_blank'); }
+        else el.style.display='none';
+      });
+      document.querySelector('.card-form').style.display='none';
+      document.getElementById('result').style.display='flex';
+    });
+    document.getElementById('download-btn').addEventListener('click', () => {
+      const card = document.getElementById('card-to-download');
+      // apply background only for capture
+      if (bgSrc) card.style.backgroundImage = `url(${bgSrc})`;
+      html2canvas(card,{backgroundColor:null,scale:2}).then(canvas=>{
+        canvas.toBlob(blob=>{const a=document.createElement('a');a.download='card.png';a.href=URL.createObjectURL(blob);a.click();});
+        // remove inline background after capture
+        card.style.backgroundImage = '';
+      });
+    });
+  </script>
+</body>
+</html>
